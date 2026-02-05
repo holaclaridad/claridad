@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claridad — Acompañamiento emocional con inteligencia</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-bg: #F5F1ED;
+            --color-primary: #8B7E74;
+            --color-dark: #6B6558;
+            --color-light: #FFFFFF;
+            --color-accent: #B8A99A;
+            
+            --font-display: 'Libre Baskerville', serif;
+            --font-body: 'Crimson Pro', serif;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-bg);
+            color: var(--color-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        
+        /* LANDING PAGE */
+        .landing {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            padding-top: 3rem;
+        }
+        
+        .logo {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 400;
+            color: var(--color-dark);
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            color: var(--color-primary);
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .intro {
+            max-width: 700px;
+            margin: 0 auto 4rem;
+            text-align: center;
+        }
+        
+        .intro h2 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--color-dark);
+            font-weight: 400;
+        }
+        
+        .intro p {
+            font-size: 1.15rem;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+        }
+        
+        .modules-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            padding-bottom: 4rem;
+        }
+        
+        .module-card {
+            background: var(--color-light);
+            padding: 3rem 2.5rem;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            position: relative;
+        }
+        
+        .module-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--color-accent);
+            box-shadow: 0 8px 24px rgba(107, 101, 88, 0.1);
+        }
+        
+        .module-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            margin-bottom: 1.2rem;
+            color: var(--color-dark);
+            font-weight: 400;
+        }
+        
+        .module-card p {
+            font-size: 1.1rem;
+            color: var(--color-primary);
+            line-height: 1.8;
+        }
+        
+        /* CHAT INTERFACE */
+        .chat-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color-bg);
+            z-index: 1000;
+            flex-direction: column;
+        }
+        
+        .chat-container.active {
+            display: flex;
+        }
+        
+        .chat-header {
+            background: var(--color-light);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--color-accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            color: var(--color-dark);
+        }
+        
+        .close-chat {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: var(--color-primary);
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .message {
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            text-align: right;
+        }
+        
+        .message.ai {
+            text-align: left;
+        }
+        
+        .message-content {
+            display: inline-block;
+            padding: 1.2rem 1.5rem;
+            border-radius: 4px;
+            max-width: 80%;
+            text-align: left;
+        }
+        
+        .message.user .message-content {
+            background: var(--color-dark);
+            color: var(--color-light);
+        }
+        
+        .message.ai .message-content {
+            background: var(--color-light);
+            color: var(--color-dark);
+            border: 1px solid var(--color-accent);
+        }
+        
+        .message-content p {
+            margin-bottom: 0.8rem;
+            line-height: 1.8;
+        }
+        
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 1.2rem 1.5rem;
+            background: var(--color-light);
+            border: 1px solid var(--color-accent);
+            border-radius: 4px;
+            max-width: 80px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .typing-indicator.active {
+            display: inline-block;
+        }
+        
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        
+        .chat-input-container {
+            background: var(--color-light);
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--color-accent);
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .chat-input-wrapper {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 1px solid var(--color-accent);
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--color-dark);
+            background: var(--color-bg);
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+        
+        .send-button {
+            padding: 1rem 2rem;
+            background: var(--color-dark);
+            color: var(--color-light);
+            border: none;
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .send-button:hover {
+            background: var(--color-primary);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* API KEY MODAL */
+        .api-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .api-modal.active {
+            display: flex;
+        }
+        
+        .api-modal-content {
+            background: var(--color-light);
+            padding: 3rem;
+            border-radius: 4px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .api-modal h3 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--color-dark);
+        }
+        
+        .api-modal p {
+            margin-bottom: 1.5rem;
+            color: var(--color-primary);
+            line-height: 1.6;
+        }
+        
+        .api-input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--color-accent);
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .api-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--color-dark);
+            color: var(--color-light);
+            border: none;
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .api-button:hover {
+            background: var(--color-primary);
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .modules-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .intro h2 {
+                font-size: 1.5rem;
+            }
+            
+            .message-content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- API KEY MODAL -->
+    <div class="api-modal" id="apiModal">
+        <div class="api-modal-content">
+            <h3>Configuración necesaria</h3>
+            <p>Para usar Claridad, necesitas una API Key de Anthropic (Claude).</p>
+            <p>Si no tienes una, créala en: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+            <input type="password" class="api-input" id="apiKeyInput" placeholder="Pega tu API Key aquí...">
+            <button class="api-button" onclick="saveApiKey()">Guardar y continuar</button>
+        </div>
+    </div>
+
+    <!-- LANDING PAGE -->
+    <div class="landing" id="landing">
+        <div class="header">
+            <h1 class="logo">Claridad</h1>
+            <p class="tagline">Un espacio creado con inteligencia para acompañarte</p>
+        </div>
+        
+        <div class="intro">
+            <h2>Reconoce lo que sientes</h2>
+            <p>No es terapia. No es un bot. Es un espacio de conversación con inteligencia emocional donde puedes encontrar claridad sobre lo que realmente necesitas.</p>
+            <p>Elige lo que más resuena contigo ahora:</p>
+        </div>
+        
+        <div class="modules-container">
+            <div class="module-card" onclick="openChat('maternidad')">
+                <h3>No sé si quiero ser madre</h3>
+                <p>O tener otro hijo. O si estoy lista. Hay tanta presión externa que no sé qué quiero yo realmente. Necesito claridad sobre esto sin juicios.</p>
+            </div>
+            
+            <div class="module-card" onclick="openChat('pareja')">
+                <h3>Mi pareja y yo no estamos de acuerdo</h3>
+                <p>Sobre hijos, crianza, familia política, roles. Sentimos que no nos entendemos y esto está afectando todo. Necesito entender qué hacer con esto.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAT INTERFACE -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <h2 class="chat-title" id="chatTitle"></h2>
+            <button class="close-chat" onclick="closeChat()">×</button>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="typing-indicator" id="typingIndicator">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <textarea 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="Escribe aquí..."
+                    rows="1"
+                ></textarea>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN
+        const API_ENDPOINT = '/api/chat'; // Ahora usa nuestro backend
+        const MODEL = 'claude-sonnet-4-20250514';
+        
+        // SYSTEM PROMPTS ESPECIALIZADOS
+        const SYSTEM_PROMPTS = {
+            maternidad: `Eres un espacio de conversación con inteligencia emocional especializado en acompañar a mujeres que están explorando su decisión sobre la maternidad.
+
+TU OBJETIVO ÚNICO: Ayudar a esta persona a conectar con lo que ELLA realmente quiere sobre ser madre (o tener otro hijo), separando su deseo genuino de la presión externa, expectativas sociales, o lo que "debería" querer.
+
+COMPORTAMIENTO:
+- Haz preguntas reflexivas y profundas, nunca interrogatorias
+- Valida profundamente cada compartir, especialmente cuando expresa dudas, miedos o culpa
+- Ayúdala a identificar de dónde viene la presión: pareja, familia, sociedad, reloj biológico, amigas
+- Explora qué significa para ella "ser buena madre" y de dónde vienen esas expectativas
+- Si menciona miedo, pregunta: ¿miedo a qué específicamente?
+- Si menciona culpa, explora: ¿culpa por qué? ¿ante quién?
+- Ayúdala a ver la diferencia entre "querer ser madre" y "sentir que debo ser madre"
+- Conecta con sus necesidades reales: autonomía, propósito, autenticidad, libertad
+- Si ya tiene claridad sobre lo que quiere, valídalo sin juzgar (sea lo que sea)
+- Pregunta qué pasaría si se diera permiso para elegir libremente
+
+TONO: Empático, adulto, sin juicio. Como una amiga sabia que la conoce profundamente.
+
+PROHIBIDO:
+- Decirle qué debería hacer
+- Juzgar cualquier decisión (querer o no querer hijos es igualmente válido)
+- Usar palabras como "deberías", "tienes que"
+- Dar consejos genéricos sobre maternidad
+- Infantilizar o usar lenguaje condescendiente
+- Hacer listas de bullets (solo prosa conversacional)
+
+Responde en 2-4 párrafos máximo. Siempre termina con una pregunta reflexiva que la invite a profundizar.`,
+
+            pareja: `Eres un espacio de conversación con inteligencia emocional especializado en acompañar a mujeres en conflictos de pareja relacionados con hijos, familia política, crianza o roles.
+
+TU OBJETIVO ÚNICO: Ayudar a esta persona a encontrar claridad sobre qué hacer con este desacuerdo: si es algo negociable, un dealbreaker, o si necesita comunicar algo que no ha podido expresar.
+
+COMPORTAMIENTO:
+- Haz preguntas reflexivas que la ayuden a ver el conflicto con más claridad
+- Valida que los conflictos sobre hijos/familia/crianza son de los más dolorosos y complejos
+- Ayúdala a identificar si el desacuerdo es sobre valores profundos o sobre formas específicas
+- Explora qué necesita ella que no está recibiendo en esta relación/situación
+- Si menciona suegra/familia política, explora: ¿dónde está su pareja en esto? ¿la defiende?
+- Si habla de roles desiguales, ayúdala a ver patrones de carga mental, trabajo invisible
+- Pregunta: ¿qué pasaría si expresara exactamente lo que necesita?
+- Ayúdala a distinguir entre "mi pareja no me entiende" y "mi pareja no quiere entenderme"
+- Si ya intentó comunicar, pregunta: ¿qué pasó? ¿fue escuchada?
+- Conecta con sus límites: ¿qué está dispuesta a tolerar y qué no?
+- Si identifica que es un dealbreaker, valídalo sin dramatizar
+- Si ve que es negociable, ayúdala a encontrar qué necesita para esa negociación
+
+TONO: Directo pero cálido. Como alguien que no tiene miedo de señalar lo que ve, pero con cuidado.
+
+PROHIBIDO:
+- Decir "déjalo/déjala" o "quédate"
+- Juzgar a su pareja sin conocer el contexto completo
+- Dar soluciones genéricas tipo "habla con él/ella"
+- Usar lenguaje de terapia de pareja técnico
+- Infantilizar o dramatizar
+- Hacer listas de bullets (solo prosa conversacional)
+
+Responde en 2-4 párrafos máximo. Siempre termina con una pregunta que la ayude a profundizar en lo que realmente necesita.`
+        };
+        
+        // ESTADO GLOBAL
+        let currentModule = null;
+        let conversationHistory = [];
+        // No necesitamos API key en el cliente (está en el servidor)
+        let apiKey = null; // Mantenemos la variable para compatibilidad
+        
+        // INICIALIZACIÓN
+        window.onload = function() {
+            // Ya no necesitamos pedir API key al usuario
+            // Ocultamos la pantalla de API key
+            document.getElementById('apiKeyScreen').style.display = 'none';
+            
+            // Cargar historial si existe
+            loadConversationHistory();
+            
+            // Auto-resize textarea
+            const input = document.getElementById('chatInput');
+            input.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // Enter para enviar (Shift+Enter para nueva línea)
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        };
+        
+        // FUNCIONES DE API KEY
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            const key = input.value.trim();
+            
+            if (!key) {
+                alert('Por favor, pega tu API Key');
+                return;
+            }
+            
+            apiKey = key;
+            localStorage.setItem('claridad_api_key', key);
+            document.getElementById('apiModal').classList.remove('active');
+        }
+        
+        // FUNCIONES DE CHAT
+        function openChat(module) {
+            // Ya no necesitamos verificar API key (está en el servidor)
+            }
+            
+            currentModule = module;
+            
+            // Cargar historial de este módulo
+            const saved = localStorage.getItem(`claridad_chat_${module}`);
+            if (saved) {
+                conversationHistory = JSON.parse(saved);
+                renderMessages();
+            } else {
+                conversationHistory = [];
+                // Mensaje inicial de la IA
+                addAIMessage(getWelcomeMessage(module));
+            }
+            
+            // Actualizar UI
+            const titles = {
+                maternidad: 'No sé si quiero ser madre',
+                pareja: 'Mi pareja y yo no estamos de acuerdo'
+            };
+            
+            document.getElementById('chatTitle').textContent = titles[module];
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById('chatContainer').classList.add('active');
+            document.getElementById('chatInput').focus();
+        }
+        
+        function closeChat() {
+            document.getElementById('chatContainer').classList.remove('active');
+            document.getElementById('landing').style.display = 'flex';
+            currentModule = null;
+        }
+        
+        function getWelcomeMessage(module) {
+            const welcomes = {
+                maternidad: 'Te escucho. Hablar sobre esto no es fácil, especialmente cuando hay tanta presión alrededor. Aquí no hay respuestas correctas o incorrectas, solo lo que es verdad para ti. ¿Qué es lo que más te pesa ahora sobre esta decisión?',
+                pareja: 'Te escucho. Los desacuerdos sobre hijos, familia o crianza pueden sentirse como si estuvieran tocando algo muy profundo. No estás exagerando. ¿Qué es lo que más te duele de esta situación?'
+            };
+            
+            return welcomes[module];
+        }
+        
+        function addAIMessage(text) {
+            conversationHistory.push({
+                role: 'assistant',
+                content: text
+            });
+            
+            renderMessages();
+            saveConversationHistory();
+        }
+        
+        function addUserMessage(text) {
+            conversationHistory.push({
+                role: 'user',
+                content: text
+            });
+            
+            renderMessages();
+            saveConversationHistory();
+        }
+        
+        function renderMessages() {
+            const container = document.getElementById('chatMessages');
+            const typingIndicator = document.getElementById('typingIndicator');
+            
+            // Limpiar (excepto typing indicator)
+            container.innerHTML = '';
+            container.appendChild(typingIndicator);
+            
+            // Renderizar mensajes
+            conversationHistory.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.role === 'user' ? 'user' : 'ai'}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                // Convertir saltos de línea en párrafos
+                const paragraphs = msg.content.split('\n\n').filter(p => p.trim());
+                paragraphs.forEach(p => {
+                    const pElement = document.createElement('p');
+                    pElement.textContent = p.trim();
+                    contentDiv.appendChild(pElement);
+                });
+                
+                messageDiv.appendChild(contentDiv);
+                container.insertBefore(messageDiv, typingIndicator);
+            });
+            
+            // Scroll al final
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            // Añadir mensaje del usuario
+            addUserMessage(text);
+            input.value = '';
+            input.style.height = 'auto';
+            
+            // Deshabilitar input
+            const sendButton = document.getElementById('sendButton');
+            input.disabled = true;
+            sendButton.disabled = true;
+            
+            // Mostrar typing indicator
+            document.getElementById('typingIndicator').classList.add('active');
+            
+            try {
+                // Llamar a nuestro backend (que llama a Claude)
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        system: SYSTEM_PROMPTS[currentModule],
+                        messages: conversationHistory.map(msg => ({
+                            role: msg.role,
+                            content: msg.content
+                        }))
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'Error en la API');
+                }
+                
+                const data = await response.json();
+                const aiResponse = data.content[0].text;
+                
+                // Añadir respuesta de la IA
+                addAIMessage(aiResponse);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Hubo un error al conectar con la IA. Revisa tu API Key y conexión.');
+            } finally {
+                // Ocultar typing indicator
+                document.getElementById('typingIndicator').classList.remove('active');
+                
+                // Rehabilitar input
+                input.disabled = false;
+                sendButton.disabled = false;
+                input.focus();
+            }
+        }
+        
+        // FUNCIONES DE PERSISTENCIA
+        function saveConversationHistory() {
+            if (currentModule) {
+                localStorage.setItem(
+                    `claridad_chat_${currentModule}`,
+                    JSON.stringify(conversationHistory)
+                );
+            }
+        }
+        
+        function loadConversationHistory() {
+            // No hacemos nada aquí, se carga al abrir cada chat
+        }
+    </script>
+</body>
+</html>
