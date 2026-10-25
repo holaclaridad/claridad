@@ -345,8 +345,20 @@ export async function leerCIDO(fecha: string): Promise<Publicacion[]> {
   });
 }
 
-// ---------- filtro del bot ----------
-export const FILTRO_BOMBEROS = /bomber|bombeir|\bspeis\b|\bsepeis\b|\bspei\b|extinci[oó]n de incendios|prevenci[oó]n y extinci|salvamento|operador[ae]?\/?a? de (comunicaciones|emergencias|sala)|bombers|suhiltzaile/i;
+// ---------- filtro del bot: solo la categoría de bombero/a ----------
+// Se mira solo el título (no el organismo): un consorcio de bomberos que convoca un administrativo no cuenta.
+// Formas de "bombero" en castellano, gallego, catalán y euskera.
+const BOMBERO = /\bbomber[oa]s?\b|\bbomber[oa]\/[ao]\b|\bbombeir[oa]s?\b|\bbombers?\b|\bsuhiltzaile/i;
+// Otras categorías del servicio que mencionan "bomberos" en el título pero no son la plaza de bombero/a.
+const OTRA_CATEGORIA = /\b(sargent[oa]s?|cab[oa]s?|caporal|suboficial|oficial(es)?|sergent|jef[ea]s?|cap de|inspector[ae]?s?|subinspector|intendente|sotsinspector|operador[ae]?s?|operari[oa]s?|enfermer[oa]s?|infermer|m[eé]dic[oa]s?|t[eé]cnic[oa]s?|administrativ[oa]s?|auxiliar|mec[aá]nic[oa]s?|conserje|ordenanza)\b/i;
+// Si el título nombra explícitamente plazas de bombero, cuenta aunque cite otras categorías.
+const PLAZA_BOMBERO = /(plazas?|places?|prazas?|categor[ií]a|puestos?|llocs?)\s+(de\s+|d['’]\s*)?(\(?\d+\)?\s+)?(bomber|bombeir)|(bomber[oa]s?|bombers?)[\s/-]*(conductor|de primera|escala b[aà]sica)/i;
+
+// Se evalúa por trozos (título, notas del BOE separadas por " | ") para que una nota con otra categoría
+// no tape la de bombero.
+export function esBombero(p: Publicacion): boolean {
+  return p.titulo.split(/ — | \| /).some(t => BOMBERO.test(t) && (PLAZA_BOMBERO.test(t) || !OTRA_CATEGORIA.test(t)));
+}
 
 export const LECTORES: Record<string, (fecha: string) => Promise<Publicacion[]>> = {
   BOE: async f => enriquecerBoeLocal(await leerBOE(f)),
@@ -363,7 +375,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (solo && nombre !== solo) continue;
     try {
       const pubs = await leer(fecha);
-      const hits = pubs.filter(p => FILTRO_BOMBEROS.test(`${p.titulo} ${p.organismo ?? ''}`));
+      const hits = pubs.filter(esBombero);
       console.log(`${nombre}: ${pubs.length} publicaciones, ${hits.length} de bomberos` + (pubs[0] ? ` | ej.: ${pubs[0].titulo.slice(0, 90)} [${pubs[0].organismo ?? ''}] ${pubs[0].url ?? ''}` : ''));
       for (const h of hits) console.log(`   🔥 ${h.titulo.slice(0, 160)} | ${h.organismo ?? ''} | ${h.url ?? ''}`);
     } catch (e) {

@@ -42,11 +42,20 @@ casos el patrón de URL, si lo hay, sale de WebSearch y no está confirmado.
 5. **User-Agent:** DOE se citaba como fuente que bloquea el UA por defecto, pero en estas pruebas no
    bloqueó. En cambio, **xunta.gal (DOG) devuelve HTTP 500 al UA de Chrome** y 200 con UA de Firefox.
    Los lectores usan un UA de navegador y, para el DOG, Firefox.
-6. **Filtro:** además de "bombero", conviene incluir *bombeiro* (gallego), *bomber/bombers* (catalán),
-   *suhiltzaile* (euskera), *SPEIS/SEPEI*, *extinción de incendios*, *salvamento* y *operador/a de
-   comunicaciones o sala*. Algunas convocatorias usan nombres como "Técnico/a Superior de Seguridad y
-   Emergencias" (Las Palmas, 23/10/2026) que ese filtro no capta: valorar si se añade "emergencias"
-   asumiendo más falsos positivos.
+6. **Filtro: solo la categoría de bombero/a** (`esBombero` en `lectores.ts`).
+   - Se mira solo el **título**, no el organismo: un consorcio de bomberos que convoca un administrativo
+     no cuenta. En el BOE el título incluye la nota del XML de cada disposición.
+   - Tiene que aparecer "bombero/a" en cualquiera de sus formas: *bombero/a, bomberos, bombeiro/a*
+     (gallego), *bomber/bombers* (catalán) o *suhiltzaile* (euskera). Entra también Bombero-Conductor.
+   - Se descartan las otras categorías del servicio aunque digan "bomberos": cabo, sargento, oficial,
+     jefe, inspector, operador/a (de comunicaciones o de control), técnico, enfermero, administrativo,
+     mecánico, etc.
+   - Excepción: si el título nombra explícitamente "plazas de bombero" (o "places de bomber",
+     "prazas de bombeiro"), cuenta aunque cite otras categorías.
+   - Probado con 14 casos y con los boletines reales. Por ejemplo, descarta "tres plazas de CABO del
+     Servicio de Extinción de Incendios" (BOP Ávila) y "operador de control de Bombers" (DOGC).
+   - Queda dentro el **bombero forestal** si el título dice "bombero". Si no se quiere, basta añadir
+     `forestal` a `OTRA_CATEGORIA`.
 
 ## Tabla maestra
 
@@ -200,25 +209,19 @@ node bot-bomberos/lectores.ts 23/10/2026 "BOP Granada"                   # una f
 ```
 (Node ≥ 22.18 ejecuta TypeScript directamente; `NODE_USE_ENV_PROXY=1` solo hace falta detrás de un proxy.)
 
-Resultado real del 23/10/2026: publicaciones por fuente y coincidencias con el filtro de bomberos.
+Resultado real con el filtro `esBombero` (solo la categoría de bombero/a):
 
-| Lector | Publicaciones | 🔥 | Ejemplo de coincidencia |
-|---|---|---|---|
-| BOE | 57 | 1 | Ayto. de Valladolid, convocatoria (la nota del XML: "Bombero/a del Servicio de Extinción de Incendios…") |
-| DOGV | 56 | 0 | |
-| BORM | 14 | 0 | |
-| BOA (+BOP HU/TE/Z) | 92 | 0 | (13/10/2026: "Nombramiento de 24 Bomberos", Diputación de Huesca) |
-| DOGC | 84 | 0 | |
-| DOCM | 32 | 0 | |
-| DOE | 17 | 0 | |
-| BOCYL | 39 | 0 | (08/10/2026: 12 plazas de Bombero, Ayto. de Valladolid) |
-| BOP Granada | 17 | 2 | "Bases… seis (6) plazas de Bombero/a", Ayto. de Motril; Agencia Provincial de Extinción de Incendios |
-| BOP Huelva | 18 | 0 | |
-| BOP Las Palmas | 24 | 0 | (5 plazas de "Técnico/a Superior de Seguridad y Emergencias": no lo capta el filtro) |
-| BOP S/C Tenerife | 31 | 0 | |
-| BOP Ávila | 11 | 2 | Admitidos y excluidos, Ayto. de Ávila (Recursos Humanos) |
-| BOP Toledo | 32 | 1 | Consorcio Provincial de Extinción de Incendios y Salvamentos de Toledo |
-| CIDO (22/10/2026) | 217 | 1 | "60 places de Bomber del SPCPEIS", Ajuntament de Barcelona |
+| Lector | Fecha | Publicaciones | 🔥 | Coincidencia |
+|---|---|---|---|---|
+| BOE | 23/10/2026 | 57 | 1 | Ayto. de Valladolid: la nota del XML dice "Promoción interna: Bombero/a del Servicio de Extinción de Incendios…" |
+| BOP Granada | 23/10/2026 | 17 | 1 | "Bases… seis (6) plazas de Bombero/a", Ayto. de Motril |
+| BOA (+BOP HU/TE/Z) | 13/10/2026 | 176 | 1 | "Nombramiento de 24 Bomberos", Diputación de Huesca |
+| BOCYL | 08/10/2026 | 27 | 1 | "…12 plazas de Bombero…", Ayto. de Valladolid |
+| CIDO | 22/10/2026 | 217 | 1 | "60 places de Bomber del SPCPEIS", Ajuntament de Barcelona |
+| CIDO | 15/10/2026 | 255 | 1 | "250 places de Bomber, escala bàsica", Generalitat de Catalunya |
+| DOGV, BORM, DOGC, DOCM, DOE, BOP Huelva, Las Palmas, Tenerife, Toledo | 23/10/2026 | 14–92 | 0 | — |
+| BOP Ávila | 23/10/2026 | 11 | 0 | Descarta bien "tres plazas de CABO" y "una plaza de SARGENTO" del Servicio de Extinción de Incendios |
+| BOP Toledo | 23/10/2026 | 32 | 0 | Descarta bien "carrera profesional" del Consorcio de Extinción de Incendios |
 
 ```ts
 // Lectores en BORRADOR de boletines oficiales (bot de convocatorias de bombero).
@@ -568,8 +571,20 @@ export async function leerCIDO(fecha: string): Promise<Publicacion[]> {
   });
 }
 
-// ---------- filtro del bot ----------
-export const FILTRO_BOMBEROS = /bomber|bombeir|\bspeis\b|\bsepeis\b|\bspei\b|extinci[oó]n de incendios|prevenci[oó]n y extinci|salvamento|operador[ae]?\/?a? de (comunicaciones|emergencias|sala)|bombers|suhiltzaile/i;
+// ---------- filtro del bot: solo la categoría de bombero/a ----------
+// Se mira solo el título (no el organismo): un consorcio de bomberos que convoca un administrativo no cuenta.
+// Formas de "bombero" en castellano, gallego, catalán y euskera.
+const BOMBERO = /\bbomber[oa]s?\b|\bbomber[oa]\/[ao]\b|\bbombeir[oa]s?\b|\bbombers?\b|\bsuhiltzaile/i;
+// Otras categorías del servicio que mencionan "bomberos" en el título pero no son la plaza de bombero/a.
+const OTRA_CATEGORIA = /\b(sargent[oa]s?|cab[oa]s?|caporal|suboficial|oficial(es)?|sergent|jef[ea]s?|cap de|inspector[ae]?s?|subinspector|intendente|sotsinspector|operador[ae]?s?|operari[oa]s?|enfermer[oa]s?|infermer|m[eé]dic[oa]s?|t[eé]cnic[oa]s?|administrativ[oa]s?|auxiliar|mec[aá]nic[oa]s?|conserje|ordenanza)\b/i;
+// Si el título nombra explícitamente plazas de bombero, cuenta aunque cite otras categorías.
+const PLAZA_BOMBERO = /(plazas?|places?|prazas?|categor[ií]a|puestos?|llocs?)\s+(de\s+|d['’]\s*)?(\(?\d+\)?\s+)?(bomber|bombeir)|(bomber[oa]s?|bombers?)[\s/-]*(conductor|de primera|escala b[aà]sica)/i;
+
+// Se evalúa por trozos (título, notas del BOE separadas por " | ") para que una nota con otra categoría
+// no tape la de bombero.
+export function esBombero(p: Publicacion): boolean {
+  return p.titulo.split(/ — | \| /).some(t => BOMBERO.test(t) && (PLAZA_BOMBERO.test(t) || !OTRA_CATEGORIA.test(t)));
+}
 
 export const LECTORES: Record<string, (fecha: string) => Promise<Publicacion[]>> = {
   BOE: async f => enriquecerBoeLocal(await leerBOE(f)),
@@ -586,7 +601,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (solo && nombre !== solo) continue;
     try {
       const pubs = await leer(fecha);
-      const hits = pubs.filter(p => FILTRO_BOMBEROS.test(`${p.titulo} ${p.organismo ?? ''}`));
+      const hits = pubs.filter(esBombero);
       console.log(`${nombre}: ${pubs.length} publicaciones, ${hits.length} de bomberos` + (pubs[0] ? ` | ej.: ${pubs[0].titulo.slice(0, 90)} [${pubs[0].organismo ?? ''}] ${pubs[0].url ?? ''}` : ''));
       for (const h of hits) console.log(`   🔥 ${h.titulo.slice(0, 160)} | ${h.organismo ?? ''} | ${h.url ?? ''}`);
     } catch (e) {
