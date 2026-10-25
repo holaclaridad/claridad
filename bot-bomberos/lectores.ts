@@ -332,6 +332,19 @@ export async function leerBOPToledo(fecha: string): Promise<Publicacion[]> {
     organismo: ctx.organismo?.replace(/^Anunciante\s*:\s*/i, ''), url: `https://bop.diputoledo.es/webEbop/${m[2].replace(/&amp;/g, '&')}` }));
 }
 
+// ---------- 14. CIDO / Transparència Catalunya (todas las administraciones catalanas) — API SODA JSON ----------
+// Agregador oficial: una fila por proceso; data_darrer_anunci cambia con cada trámite nuevo
+// (convocatoria, admitidos, notas...), así que también sirve para seguir procesos.
+export async function leerCIDO(fecha: string): Promise<Publicacion[]> {
+  const url = `https://analisi.transparenciacatalunya.cat/resource/a2hm-uzyj.json?data_darrer_anunci=${isoFecha(fecha)}T00:00:00.000&$limit=1000`;
+  const filas = comoArray<any>(JSON.parse((await fetchTexto(url, { headers: { Accept: 'application/json' } })).texto));
+  return filas.map(r => {
+    const enlace: string | undefined = r.enlla?.url;
+    return { fuente: 'CIDO', id: enlace?.match(/(\d+)\/?$/)?.[1] ?? `${r.codi_ens}-${r.resum}`, fecha, titulo: r.resum,
+      organismo: r.nom_ens, seccion: r.termini_presentaci_ ? `Plazo: ${r.termini_presentaci_}` : undefined, url: enlace };
+  });
+}
+
 // ---------- filtro del bot ----------
 export const FILTRO_BOMBEROS = /bomber|bombeir|\bspeis\b|\bsepeis\b|\bspei\b|extinci[oó]n de incendios|prevenci[oó]n y extinci|salvamento|operador[ae]?\/?a? de (comunicaciones|emergencias|sala)|bombers|suhiltzaile/i;
 
@@ -339,7 +352,7 @@ export const LECTORES: Record<string, (fecha: string) => Promise<Publicacion[]>>
   BOE: async f => enriquecerBoeLocal(await leerBOE(f)),
   DOGV: leerDOGV, BORM: leerBORM, BOA: leerBOA, DOGC: leerDOGC, DOCM: leerDOCM, DOE: leerDOE, BOCYL: leerBOCYL,
   'BOP Granada': leerBOPGranada, 'BOP Huelva': leerBOPHuelva, 'BOP Las Palmas': leerBOPLasPalmas,
-  'BOP S/C Tenerife': leerBOPTenerife, 'BOP Ávila': leerBOPAvila, 'BOP Toledo': leerBOPToledo,
+  'BOP S/C Tenerife': leerBOPTenerife, 'BOP Ávila': leerBOPAvila, 'BOP Toledo': leerBOPToledo, CIDO: leerCIDO,
 };
 
 // Prueba manual: node bot-bomberos/lectores.ts 23/10/2026 [FUENTE]
