@@ -42,20 +42,33 @@ casos el patrón de URL, si lo hay, sale de WebSearch y no está confirmado.
 5. **User-Agent:** DOE se citaba como fuente que bloquea el UA por defecto, pero en estas pruebas no
    bloqueó. En cambio, **xunta.gal (DOG) devuelve HTTP 500 al UA de Chrome** y 200 con UA de Firefox.
    Los lectores usan un UA de navegador y, para el DOG, Firefox.
-6. **Filtro: solo la categoría de bombero/a** (`esBombero` en `lectores.ts`).
-   - Se mira solo el **título**, no el organismo: un consorcio de bomberos que convoca un administrativo
-     no cuenta. En el BOE el título incluye la nota del XML de cada disposición.
-   - Tiene que aparecer "bombero/a" en cualquiera de sus formas: *bombero/a, bomberos, bombeiro/a*
-     (gallego), *bomber/bombers* (catalán) o *suhiltzaile* (euskera). Entra también Bombero-Conductor.
-   - Se descartan las otras categorías del servicio aunque digan "bomberos": cabo, sargento, oficial,
-     jefe, inspector, operador/a (de comunicaciones o de control), técnico, enfermero, administrativo,
-     mecánico, etc.
-   - Excepción: si el título nombra explícitamente "plazas de bombero" (o "places de bomber",
-     "prazas de bombeiro"), cuenta aunque cite otras categorías.
-   - Probado con 14 casos y con los boletines reales. Por ejemplo, descarta "tres plazas de CABO del
-     Servicio de Extinción de Incendios" (BOP Ávila) y "operador de control de Bombers" (DOGC).
-   - Queda dentro el **bombero forestal** si el título dice "bombero". Si no se quiere, basta añadir
-     `forestal` a `OTRA_CATEGORIA`.
+6. **Filtro: por defecto solo bombero/a de acceso libre; lo demás, etiquetado y opcional.** Funciones
+   `clasificar`, `debeAvisar` y `etiqueta` en `lectores.ts`.
+   - **Categorías:**
+
+     | Categoría | Qué entra |
+     |---|---|
+     | 🚒 `bombero` | bombero/a, bombero-conductor, *bombeiro*, *bomber*, *suhiltzaile* |
+     | 🌲 `forestal` | bombero/a forestal |
+     | 🎖️ `mandos` | cabo, sargento, suboficial, oficial, jefe, inspector… |
+     | 📞 `operador` | operador/a de comunicaciones, de sala o de control |
+     | 🗂️ `otras` | técnico, enfermero, administrativo, mecánico… de un servicio de bomberos |
+   - **Acceso:** cada aviso se marca 🟢 *Acceso libre* o 🔒 *Promoción interna / movilidad*. El 🔒
+     cubre promoción interna, turno restringido, concurso ordinario, de traslados o de méritos, provisión
+     de puestos, libre designación y comisión de servicios: plazas a las que solo opta quien ya es
+     funcionario. Si el anuncio mezcla turno libre y promoción interna, cuenta como acceso libre.
+   - **Por defecto** (`OPCIONES_POR_DEFECTO`) solo se avisa de 🚒 bombero/a 🟢 de acceso libre. Cada
+     usuario puede activar las otras categorías y la promoción interna con
+     `debeAvisar(p, { categorias: [...], promocionInterna: true })`.
+   - Se mira el **título**; en el BOE incluye la nota del XML. El organismo solo sirve para detectar
+     "otras del servicio" (p. ej. un administrativo de un consorcio de bomberos).
+   - **Comprobado con 15 casos y con boletines reales:**
+     - Motril, Huesca y Barcelona → 🔔 aviso.
+     - Valladolid en el BOE (promoción interna) y en el BOCYL (concurso ordinario) → 🔒, solo como opción.
+     - Cabos y sargentos de Ávila → 🎖️🔒.
+     - Operador de control de Bombers → 📞.
+     - Administrativo de la Agencia de Extinción de Incendios de Granada → 🗂️.
+     - "Técnico/a Superior de Seguridad y Emergencias" y "carrera profesional" → ignorados.
 
 ## Tabla maestra
 
@@ -209,19 +222,19 @@ node bot-bomberos/lectores.ts 23/10/2026 "BOP Granada"                   # una f
 ```
 (Node ≥ 22.18 ejecuta TypeScript directamente; `NODE_USE_ENV_PROXY=1` solo hace falta detrás de un proxy.)
 
-Resultado real con el filtro `esBombero` (solo la categoría de bombero/a):
+Resultado real con el filtro (🔔 = aviso por defecto; el resto, solo si el usuario lo activa):
 
-| Lector | Fecha | Publicaciones | 🔥 | Coincidencia |
-|---|---|---|---|---|
-| BOE | 23/10/2026 | 57 | 1 | Ayto. de Valladolid: la nota del XML dice "Promoción interna: Bombero/a del Servicio de Extinción de Incendios…" |
-| BOP Granada | 23/10/2026 | 17 | 1 | "Bases… seis (6) plazas de Bombero/a", Ayto. de Motril |
-| BOA (+BOP HU/TE/Z) | 13/10/2026 | 176 | 1 | "Nombramiento de 24 Bomberos", Diputación de Huesca |
-| BOCYL | 08/10/2026 | 27 | 1 | "…12 plazas de Bombero…", Ayto. de Valladolid |
-| CIDO | 22/10/2026 | 217 | 1 | "60 places de Bomber del SPCPEIS", Ajuntament de Barcelona |
-| CIDO | 15/10/2026 | 255 | 1 | "250 places de Bomber, escala bàsica", Generalitat de Catalunya |
-| DOGV, BORM, DOGC, DOCM, DOE, BOP Huelva, Las Palmas, Tenerife, Toledo | 23/10/2026 | 14–92 | 0 | — |
-| BOP Ávila | 23/10/2026 | 11 | 0 | Descarta bien "tres plazas de CABO" y "una plaza de SARGENTO" del Servicio de Extinción de Incendios |
-| BOP Toledo | 23/10/2026 | 32 | 0 | Descarta bien "carrera profesional" del Consorcio de Extinción de Incendios |
+| Lector | Fecha | Publicaciones | Detectado |
+|---|---|---|---|
+| BOP Granada | 23/10/2026 | 17 | 🔔 🚒🟢 "seis (6) plazas de Bombero/a", Ayto. de Motril · 🗂️ administrativo de la Agencia Provincial de Extinción de Incendios |
+| BOA (+BOP HU/TE/Z) | 13/10/2026 | 176 | 🔔 🚒🟢 "Nombramiento de 24 Bomberos", Diputación de Huesca |
+| CIDO | 22/10/2026 | 217 | 🔔 🚒🟢 "60 places de Bomber del SPCPEIS", Ajuntament de Barcelona |
+| CIDO | 15/10/2026 | 255 | 🔔 🚒🟢 "250 places de Bomber, escala bàsica", Generalitat |
+| CIDO | 14/10/2026 | 236 | 📞 "8 places de Tècnic especialista operador de control de Bombers" |
+| BOE | 23/10/2026 | 57 | 🚒🔒 Ayto. de Valladolid (nota del XML: "Promoción interna: Bombero/a…") |
+| BOCYL | 08/10/2026 | 27 | 🚒🔒 Valladolid, 12 plazas de Bombero por concurso ordinario · 🎖️ otra de mandos |
+| BOP Ávila | 23/10/2026 | 11 | 🎖️🔒 tres plazas de cabo y una de sargento (promoción interna) |
+| DOGV, BORM, DOGC, DOCM, DOE, BOP Huelva, Las Palmas, Tenerife, Toledo | 23/10/2026 | 14–92 | nada |
 
 ```ts
 // Lectores en BORRADOR de boletines oficiales (bot de convocatorias de bombero).
@@ -571,20 +584,79 @@ export async function leerCIDO(fecha: string): Promise<Publicacion[]> {
   });
 }
 
-// ---------- filtro del bot: solo la categoría de bombero/a ----------
-// Se mira solo el título (no el organismo): un consorcio de bomberos que convoca un administrativo no cuenta.
+// ---------- filtro del bot: categorías, acceso y opciones ----------
+// Por defecto solo se avisa de bombero/a de ACCESO LIBRE. Lo demás se detecta y etiqueta, y cada
+// usuario puede activarlo en sus opciones (promoción interna, mandos, operador, forestal, otras del servicio).
+// Se mira el título (en el BOE incluye la nota del XML) evaluado por trozos (" — ", " | "), para que una
+// nota con otra categoría no tape la de bombero. El organismo solo cuenta para "otras del servicio".
+
+export type Categoria = 'bombero' | 'forestal' | 'mandos' | 'operador' | 'otras';
+export interface Clasificacion { categoria: Categoria; promocionInterna: boolean }
+export interface OpcionesFiltro { categorias: Categoria[]; promocionInterna: boolean }
+export const OPCIONES_POR_DEFECTO: OpcionesFiltro = { categorias: ['bombero'], promocionInterna: false };
+
 // Formas de "bombero" en castellano, gallego, catalán y euskera.
 const BOMBERO = /\bbomber[oa]s?\b|\bbomber[oa]\/[ao]\b|\bbombeir[oa]s?\b|\bbombers?\b|\bsuhiltzaile/i;
-// Otras categorías del servicio que mencionan "bomberos" en el título pero no son la plaza de bombero/a.
-const OTRA_CATEGORIA = /\b(sargent[oa]s?|cab[oa]s?|caporal|suboficial|oficial(es)?|sergent|jef[ea]s?|cap de|inspector[ae]?s?|subinspector|intendente|sotsinspector|operador[ae]?s?|operari[oa]s?|enfermer[oa]s?|infermer|m[eé]dic[oa]s?|t[eé]cnic[oa]s?|administrativ[oa]s?|auxiliar|mec[aá]nic[oa]s?|conserje|ordenanza)\b/i;
-// Si el título nombra explícitamente plazas de bombero, cuenta aunque cite otras categorías.
+const FORESTAL = /\b(bomber[oa]s?|bombeir[oa]s?|bombers?)(\/[ao])?\s+forestal/i;
+const MANDOS = /\b(sargent[oa]s?|cab[oa]s?|caporal(s|es)?|suboficial(es)?|oficial(es)?|sergents?|jef[ea]s?|cap de|inspector[ae]?s?|subinspector[ae]?s?|sotsinspector|intendente)\b/i;
+const OPERADOR = /\boperador[ae]?s?(\/a)?\b|\bteleoperador/i;
+// Otras categorías del servicio que mencionan "bomberos" pero no son la plaza de bombero/a.
+const OTRA_CATEGORIA = /\b(operari[oa]s?|enfermer[oa]s?|infermer|m[eé]dic[oa]s?|t[eé]cnic[oa]s?|administrativ[oa]s?|auxiliar|mec[aá]nic[oa]s?|conserje|ordenanza)\b/i;
+// Si el trozo nombra explícitamente plazas de bombero, cuenta como bombero aunque cite otras categorías.
 const PLAZA_BOMBERO = /(plazas?|places?|prazas?|categor[ií]a|puestos?|llocs?)\s+(de\s+|d['’]\s*)?(\(?\d+\)?\s+)?(bomber|bombeir)|(bomber[oa]s?|bombers?)[\s/-]*(conductor|de primera|escala b[aà]sica)/i;
+// Servicio de bomberos (para clasificar "otras" por el organismo: administrativo de un consorcio, etc.).
+const SERVICIO = /bomber|bombeir|suhiltzaile|\bs?speis\b|\bsepei\b|extinci[oó]n de incendios|extinci[oó] d.incendis|prevenci[oó]n y extinci/i;
+// Plazas solo para quien ya es funcionario: promoción interna y también movilidad/provisión de puestos
+// (concurso ordinario, de traslados, de méritos, libre designación, comisión de servicios).
+const PROMOCION_INTERNA = /promoci[oó]n? interna|promoció interna|barne[- ]promozio|turno restringido|concurso[- ]oposici[oó]n restringid|movilidad|mobilitat|concurso ordinario|concurso de (traslados|m[eé]ritos)|concurs de (trasllat|m[eè]rits)|provisi[oó]n de puestos|libre designaci[oó]n|lliure designaci[oó]|comisi[oó]n de servicios/i;
+const ACCESO_LIBRE = /turno libre|acceso libre|oposici[oó]n libre|oposició lliure|concurso[- ]oposici[oó]n libre|nuevo ingreso|torn lliure|accés lliure|quenda librea|txanda librea|quenda libre/i;
 
-// Se evalúa por trozos (título, notas del BOE separadas por " | ") para que una nota con otra categoría
-// no tape la de bombero.
-export function esBombero(p: Publicacion): boolean {
-  return p.titulo.split(/ — | \| /).some(t => BOMBERO.test(t) && (PLAZA_BOMBERO.test(t) || !OTRA_CATEGORIA.test(t)));
+const esPromocionInterna = (t: string) => PROMOCION_INTERNA.test(t) && !ACCESO_LIBRE.test(t);
+
+// Devuelve null si el anuncio no tiene nada que ver con el servicio de bomberos.
+export function clasificar(p: Publicacion): Clasificacion | null {
+  const trozos = p.titulo.split(/ — | \| /);
+  // Promoción interna: mirando el trozo que nombra la plaza y, si no lo dice, el título entero.
+  const pi = (t: string) => esPromocionInterna(t) || (!ACCESO_LIBRE.test(t) && esPromocionInterna(p.titulo));
+  const conBombero = trozos.filter(t => BOMBERO.test(t));
+  for (const t of conBombero) if (FORESTAL.test(t)) return { categoria: 'forestal', promocionInterna: pi(t) };
+  for (const t of conBombero) {
+    if (PLAZA_BOMBERO.test(t) || !(MANDOS.test(t) || OPERADOR.test(t) || OTRA_CATEGORIA.test(t))) {
+      return { categoria: 'bombero', promocionInterna: pi(t) };
+    }
+  }
+  for (const t of conBombero) {
+    if (MANDOS.test(t)) return { categoria: 'mandos', promocionInterna: pi(t) };
+    if (OPERADOR.test(t)) return { categoria: 'operador', promocionInterna: pi(t) };
+  }
+  // Sin la palabra "bombero" (p. ej. "plazas de CABO del Servicio de Extinción de Incendios").
+  for (const t of trozos) {
+    if (!SERVICIO.test(t)) continue;
+    if (MANDOS.test(t)) return { categoria: 'mandos', promocionInterna: pi(t) };
+    if (OPERADOR.test(t)) return { categoria: 'operador', promocionInterna: pi(t) };
+  }
+  if (conBombero.length || (SERVICIO.test(`${p.titulo} ${p.organismo ?? ''}`) && OTRA_CATEGORIA.test(p.titulo))) {
+    return { categoria: 'otras', promocionInterna: esPromocionInterna(p.titulo) };
+  }
+  return null;
 }
+
+export function debeAvisar(p: Publicacion, opciones: OpcionesFiltro = OPCIONES_POR_DEFECTO): boolean {
+  const c = clasificar(p);
+  return !!c && opciones.categorias.includes(c.categoria) && (!c.promocionInterna || opciones.promocionInterna);
+}
+
+const NOMBRE_CATEGORIA: Record<Categoria, string> = {
+  bombero: '🚒 Bombero/a', forestal: '🌲 Bombero/a forestal', mandos: '🎖️ Mandos (cabo, sargento…)',
+  operador: '📞 Operador/a', otras: '🗂️ Otras del servicio',
+};
+// Etiqueta para el mensaje de Telegram, p. ej. "🚒 Bombero/a · 🔒 Promoción interna / movilidad".
+export function etiqueta(c: Clasificacion): string {
+  return `${NOMBRE_CATEGORIA[c.categoria]} · ${c.promocionInterna ? '🔒 Promoción interna / movilidad' : '🟢 Acceso libre'}`;
+}
+
+// Compatibilidad: true solo para la opción por defecto (bombero/a de acceso libre).
+export const esBombero = (p: Publicacion) => debeAvisar(p);
 
 export const LECTORES: Record<string, (fecha: string) => Promise<Publicacion[]>> = {
   BOE: async f => enriquecerBoeLocal(await leerBOE(f)),
@@ -601,9 +673,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (solo && nombre !== solo) continue;
     try {
       const pubs = await leer(fecha);
-      const hits = pubs.filter(esBombero);
-      console.log(`${nombre}: ${pubs.length} publicaciones, ${hits.length} de bomberos` + (pubs[0] ? ` | ej.: ${pubs[0].titulo.slice(0, 90)} [${pubs[0].organismo ?? ''}] ${pubs[0].url ?? ''}` : ''));
-      for (const h of hits) console.log(`   🔥 ${h.titulo.slice(0, 160)} | ${h.organismo ?? ''} | ${h.url ?? ''}`);
+      const clasif = pubs.map(p => ({ p, c: clasificar(p) })).filter(x => x.c);
+      const avisos = clasif.filter(x => debeAvisar(x.p));
+      console.log(`${nombre}: ${pubs.length} publicaciones, ${avisos.length} avisos por defecto, ${clasif.length - avisos.length} solo como opción` + (pubs[0] ? ` | ej.: ${pubs[0].titulo.slice(0, 90)} [${pubs[0].organismo ?? ''}] ${pubs[0].url ?? ''}` : ''));
+      for (const { p, c } of clasif) console.log(`   ${debeAvisar(p) ? '🔔' : '  '} [${etiqueta(c!)}] ${p.titulo.slice(0, 140)} | ${p.organismo ?? ''} | ${p.url ?? ''}`);
     } catch (e) {
       console.log(`${nombre}: ERROR ${(e as Error).message}`);
     }
