@@ -1,0 +1,13 @@
+{
+  "name": "bot-bomberos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bot de Telegram con las convocatorias de bombero/a de los boletines oficiales de España",
+  "type": "module",
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "start": "node bot.ts",
+    "prueba": "node bot.ts --dry-run",
+    "lectores": "node lectores.ts"
+  }
+}

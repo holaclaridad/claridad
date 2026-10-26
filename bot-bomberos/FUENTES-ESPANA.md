@@ -209,7 +209,7 @@ Tenerife, Ávila y Toledo, y toda Cataluña vía CIDO.
 
 ## Lectores en TypeScript (borrador)
 
-Fichero completo: [`lectores.ts`](./lectores.ts). Patrón pedido: `Publicacion`, `fetchTexto(url, init?)`
+Fichero completo: [`lectores.ts`](./lectores.ts). El bot que los ejecuta y publica en Telegram está en [`bot.ts`](./bot.ts) (ver [`README.md`](./README.md)). Patrón pedido: `Publicacion`, `fetchTexto(url, init?)`
 y un lector `async (fecha: 'DD/MM/AAAA') => Publicacion[]` por fuente.
 
 **Estado:** los 15 lectores se ejecutaron contra los servidores reales el 25/10/2026 con las fechas
@@ -409,7 +409,9 @@ export async function leerBOA(fecha: string): Promise<Publicacion[]> {
       `&SEC=OPENDATABOAJSONAPP&OUTPUTMODE=JSON&SEPARADOR=&PUBL=${aaaammdd(fecha)}`;
     const { texto } = await fetchTexto(url, { charset: 'iso-8859-1' });
     if (!texto.trimStart().startsWith('[') && !texto.trimStart().startsWith('{')) return out; // sin boletín: devuelve la portada HTML
-    const saneado = texto.replace(/[\u0000-\u001f]/g, ' ').replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+    // Se recorren los escapes por parejas: los válidos se dejan y cualquier otra barra se duplica.
+    const saneado = texto.replace(/[\u0000-\u001f]/g, ' ')
+      .replace(/\\(u[0-9a-fA-F]{4}|["\\/bfnrt])|\\/g, (m, valido) => (valido ? m : '\\\\'));
     const docs = comoArray<any>(JSON.parse(saneado));
     for (const d of docs) {
       // Seccion "VI. Boletín Oficial de la Provincia de Huesca" → fuente BOPH, etc.
